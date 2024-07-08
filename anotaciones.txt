@@ -1,0 +1,155 @@
+<p> <img src="{{url_for('static', filename='image/favicon.png')}}"></p>
+
+style q no anda 
+html,
+body {
+  height: 40%;
+}
+
+.form-signin {
+  max-width: 330px;
+  padding: 1rem;
+}
+
+.form-signin .form-floating:focus-within {
+  z-index: 2;
+}
+
+.form-signin input[type="email"] {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 8;
+  border-bottom-left-radius: 0;
+}
+
+.form-signin input[type="password"] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+
+app.py
+from flask import Flask
+from flask import render_template, request, redirect, url_for
+from flask_mysqldb import MySQL
+
+from config import config
+
+from models.entities import ModelUser
+
+from models.entities.user import User
+
+app = Flask(__name__)
+
+@app.route("/")
+def  index():
+    return redirect(url_for('login'))
+
+
+@app.route("/login", methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        #print(request.form['username'])
+        #print(request.form['userpass'])
+        user = User(0, request.form['username'], request.form['userpass'])
+        logged_user = ModelUser.login(db, user)
+        return render_template('auth/login.html')
+    else:
+        return render_template('auth/login.html')
+    
+
+if __name__ =='__main__':
+    app.config.from_object(config['develompment'])
+    app.run()
+
+config.py
+class config:
+    SECRET_KEY = 'qwertyuiopasdfghjklñzxcvbnm'
+
+
+class DevelopmentConfig(config):
+    DEBUG = True
+    MYSQL_HOST = 'localhost'
+    MYSQL_USER = 'root'
+    MYSQL_PASSWORD = ''
+    MYSQL_DB = 'login'
+    
+config = {
+    'develompment': DevelopmentConfig       
+}
+
+
+
+
+
+from flask import Flask, render_template, redirect, url_for, Response, session, request
+from flask_mysqldb import MySQL, MySQLdb
+from model.userlogin import login_true, register_true
+
+app = Flask(__name__)
+
+app.secret_key = 'qwertyuiopñlkjhgfdsa'
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = ''
+app.config['MYSQL_DB'] = 'login'
+mysql=MySQL(app)
+
+@app.route("/")
+def  index():
+    return redirect(url_for('login'))
+
+@app.route("/login", methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST' and request.form['usermail'] != None and request.form['userpass'] != None:
+        userlog = login_true(request.form['usermail'], request.form['userpass'], mysql)
+        if userlog:
+            session['logeado'] = True
+            session['id'] = userlog[0]
+            session['username'] = userlog[1]
+            return redirect(url_for('userindex'))
+        else:
+            return render_template('login/login.html', mensaje = "Usuario o contraseña no validos")
+    else:
+        return render_template('login/login.html')
+        
+@app.route("/userindex")
+def  userindex():
+    return render_template('login/userindex.html', user = session['username'])
+
+@app.route("/register", methods = ['POST', 'GET'])
+def register():
+    if request.method == 'POST'and request.form['username'] != None and request.form['fullname'] != None and request.form['userpass'] != None:
+        #register_true(request.form['username'], request.form['userpass'], request.form['fullname'], request.form['usermail'], mysql)
+        curs = mysql.connection.cursor()
+        username = request.form['username']
+        password = request.form['userpass']
+        fullname = request.form['fullname']
+        email = request.form['usermail']
+        #cur.execute('INSERT INTO `users` (`username`, `userpass`, `fullname`, `email`) VALUES (%s, %s, %s, %s)', (username, password , fullname, email))
+        #userlog = cur.fetchone()
+        sql = "INSERT INTO users (username, userpass, fullname, email) VALUES (%s, %s, %s, %s)"
+        val = (username, password , fullname, email)
+        curs.execute(sql, val)
+        print(username)
+        
+        return render_template('register.html') 
+    else:
+        return render_template('register.html')
+       
+if __name__ =='__main__':
+    #app.config.from_object(config['develompment'])
+    app.run(debug = True)
+
+
+
+
+
+    mydb = mysql.connector.connect (
+    host = "localhost",
+    user = "root",
+    password = "",
+    database = "login"
+)
+
+mycursor = mydb.cursor()
